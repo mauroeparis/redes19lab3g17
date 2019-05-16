@@ -5,5 +5,7 @@
     <inputs name="/lab3-kickstarter/results/General-*.sca"/>
   </inputs>
   <datasets/>
-  <chartSheets/>
+  <chartSheets>
+    <chartSheets name="default"/>
+  </chartSheets>
 </scave:Analysis>
