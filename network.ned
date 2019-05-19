@@ -61,7 +61,7 @@ module NodeRx {
 	    }
 	connections:
 	    in --> queue.in;
-	    queue.out --> { datarate = 0.5Mbps; } --> sink.in;
+	    queue.out --> { datarate = 1Mbps; } --> sink.in;
 }
 
 network Network
@@ -79,5 +79,5 @@ network Network
         }
     connections:
         nodeTx.out --> { datarate = 1Mbps; delay = 100us; } --> queue.in;
-        queue.out --> { datarate = 1Mbps; delay = 100us; } --> nodeRx.in;
+        queue.out --> { datarate = 0.5Mbps; delay = 100us; } --> nodeRx.in;
 }
