@@ -47,6 +47,8 @@ void TransportRx::handleMessage(cMessage * msg) {
             fpkt->setKind(2);
             int remaining = par("bufferSize").intValue() - buffer.getLength();
             fpkt->setRemainingBuffer(remaining);
+            fpkt->setAck(1);
+
             send(fpkt, "toOut$o");
 
             // dequeue packet

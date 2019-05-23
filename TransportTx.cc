@@ -12,6 +12,7 @@ private:
     cQueue buffer;
     cMessage *endServiceEvent;
     simtime_t serviceTime;
+    int waitingFeedback;
 public:
     TransportTx();
     virtual ~TransportTx();
@@ -25,6 +26,7 @@ Define_Module(TransportTx);
 
 TransportTx::TransportTx() {
     endServiceEvent = NULL;
+    waitingFeedback = 1;
 }
 
 TransportTx::~TransportTx() {
@@ -48,7 +50,7 @@ void TransportTx::handleMessage(cMessage * msg) {
             send(pkt, "toOut$o");
             // start new service
             serviceTime = pkt->getDuration();
-            scheduleAt(simTime() + serviceTime, endServiceEvent);
+            waitingFeedback = 0;
         }
     } else { // if msg is a data packet
         if (msg->getKind() == 2) {
@@ -57,10 +59,11 @@ void TransportTx::handleMessage(cMessage * msg) {
 
             int remainingBuffer = fpkt->getRemainingBuffer();
             this->bubble("Feedback");
-            // (...)
 
-            delete(msg);
+            waitingFeedback = 1;
 
+            delete msg;
+            scheduleAt(simTime() + 0, endServiceEvent);
         } else {
             // msg is a data packet
             if (buffer.getLength() >= par("bufferSize").intValue()) {
@@ -71,7 +74,8 @@ void TransportTx::handleMessage(cMessage * msg) {
                 // enqueue the packet
                 buffer.insert(msg);
                 // if the server is idle
-                if (!endServiceEvent->isScheduled()) {
+                if (waitingFeedback) {
+                    waitingFeedback = 0;
                     // start the service
                     scheduleAt(simTime() + 0, endServiceEvent);
                 }
