@@ -12,6 +12,8 @@ private:
     cQueue buffer;
     cMessage *endServiceEvent;
     simtime_t serviceTime;
+    cOutVector packetDropVector;
+    cOutVector bufferSizeVector;
     int waitingFeedback;
 public:
     TransportTx();
@@ -34,6 +36,9 @@ TransportTx::~TransportTx() {
 }
 
 void TransportTx::initialize(){
+    buffer.setName("buffer");
+    packetDropVector.setName("dropCount");
+    bufferSizeVector.setName("sizeCount");
     endServiceEvent = new cMessage("endService");
 }
 
@@ -63,21 +68,23 @@ void TransportTx::handleMessage(cMessage * msg) {
             waitingFeedback = 1;
 
             delete msg;
-            scheduleAt(simTime() + 0, endServiceEvent);
+            scheduleAt(simTime(), endServiceEvent);
         } else {
             // msg is a data packet
             if (buffer.getLength() >= par("bufferSize").intValue()) {
                 // queue is full. Drop msg
                 delete msg;
                 this->bubble("packet dropped");
+                packetDropVector.record(1);
             } else {
                 // enqueue the packet
                 buffer.insert(msg);
+                bufferSizeVector.record(buffer.getLength());
                 // if the server is idle
                 if (waitingFeedback) {
                     waitingFeedback = 0;
                     // start the service
-                    scheduleAt(simTime() + 0, endServiceEvent);
+                    scheduleAt(simTime(), endServiceEvent);
                 }
             }
         }

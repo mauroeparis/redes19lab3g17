@@ -12,6 +12,8 @@ private:
     cQueue buffer;
     cMessage *endServiceEvent;
     simtime_t serviceTime;
+    cOutVector packetDropVector;
+    cOutVector bufferSizeVector;
 public:
     TransportRx();
     virtual ~TransportRx();
@@ -32,6 +34,9 @@ TransportRx::~TransportRx() {
 }
 
 void TransportRx::initialize(){
+    buffer.setName("buffer");
+    packetDropVector.setName("dropCount");
+    bufferSizeVector.setName("sizeCount");
     endServiceEvent = new cMessage("endService");
 }
 
@@ -65,9 +70,11 @@ void TransportRx::handleMessage(cMessage * msg) {
             // queue is full. Drop msg
             delete msg;
             this->bubble("packet dropped");
+            packetDropVector.record(1);
         } else {
             // enqueue the packet
             buffer.insert(msg);
+            bufferSizeVector.record(buffer.getLength());
             // if the server is idle
             if (!endServiceEvent->isScheduled()) {
                 // start the service
