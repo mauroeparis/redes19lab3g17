@@ -1,4 +1,4 @@
-"sizeCount Network.queue0 ($genint=0.1, #0 - General-0-20190523-21:14:46-10843)",,"sizeCount Network.queue1 ($genint=0.1, #0 - General-0-20190523-21:14:46-10843)",,"sizeCount Network.nodeTx.TransTx ($genint=0.1, #0 - General-0-20190523-21:14:46-10843)",,"sizeCount Network.nodeRx.TransRx ($genint=0.1, #0 - General-0-20190523-21:14:46-10843)",
+"time_queue0","size_count_queue0","time_queue1","size_count_queue1","time_nodeTx","size_count_nodeTx","time_nodeRx","size_count_nodeRx"
 0.00026,1,0.00078,1,0.079587450457,1,0.279787450457,1
 0.179687450457,1,0.280047450457,1,0.169443489305,1,0.379787450457,1
 0.279687450457,1,0.480047450457,1,0.29503656511,1,0.49523656511,1
