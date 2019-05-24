@@ -50,9 +50,6 @@ void TransportRx::handleMessage(cMessage * msg) {
             FeedbackPkt *fpkt = new FeedbackPkt();
             fpkt->setByteLength(20);
             fpkt->setKind(2);
-            int remaining = par("bufferSize").intValue() - buffer.getLength();
-            fpkt->setRemainingBuffer(remaining);
-            fpkt->setAck(1);
 
             send(fpkt, "toOut$o");
 
@@ -65,6 +62,14 @@ void TransportRx::handleMessage(cMessage * msg) {
             serviceTime = pkt->getDuration();
             scheduleAt(simTime() + serviceTime, endServiceEvent);
         }
+    } else if (msg->getKind() == 1) {
+        FeedbackPkt *fpkt = (FeedbackPkt *) msg;
+
+        int remaining = par("bufferSize").intValue() - buffer.getLength();
+        fpkt->setRemainingBuffer(remaining);
+
+        send(fpkt, "toOut$o");
+
     } else {
         if (buffer.getLength() >= par("bufferSize").intValue()) {
             // queue is full. Drop msg

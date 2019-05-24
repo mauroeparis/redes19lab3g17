@@ -15,6 +15,7 @@ private:
     cOutVector packetDropVector;
     cOutVector bufferSizeVector;
     int waitingFeedback;
+    int remainingBuffer;
 public:
     TransportTx();
     virtual ~TransportTx();
@@ -40,6 +41,11 @@ void TransportTx::initialize(){
     packetDropVector.setName("dropCount");
     bufferSizeVector.setName("sizeCount");
     endServiceEvent = new cMessage("endService");
+
+    FeedbackPkt *fpkt = new FeedbackPkt();
+    fpkt->setByteLength(20);
+    fpkt->setKind(1);
+    send(fpkt, "toOut$o");
 }
 
 void TransportTx::finish(){
@@ -48,27 +54,40 @@ void TransportTx::finish(){
 void TransportTx::handleMessage(cMessage * msg) {
     if (msg == endServiceEvent) {
         // if packet in buffer, send next one
-        if (!buffer.isEmpty()) {
+        if (!buffer.isEmpty() && remainingBuffer) {
             // dequeue packet
             cPacket *pkt = (cPacket*) buffer.pop();
             // send packet
             send(pkt, "toOut$o");
             // start new service
             serviceTime = pkt->getDuration();
-            waitingFeedback = 0;
+            scheduleAt(simTime() + serviceTime, endServiceEvent);
+
+            remainingBuffer--;
         }
     } else { // if msg is a data packet
-        if (msg->getKind() == 2) {
-            // msg is a feedback packet
+        if (msg->getKind() == 1) {
             FeedbackPkt *fpkt = (FeedbackPkt *) msg;
+            remainingBuffer = fpkt->getRemainingBuffer();
 
-            int remainingBuffer = fpkt->getRemainingBuffer();
-            this->bubble("Feedback");
-
-            waitingFeedback = 1;
+            this->bubble("Initial");
 
             delete msg;
-            scheduleAt(simTime(), endServiceEvent);
+        } else if (msg->getKind() == 2) {
+            // msg is a feedback packet
+            FeedbackPkt *fpkt = (FeedbackPkt *) msg;
+            this->bubble("Feedback");
+
+            remainingBuffer++;
+
+            // if the server is idle
+            if (!endServiceEvent->isScheduled()) {
+                // start the service
+                scheduleAt(simTime() + 0, endServiceEvent);
+            }
+
+            delete msg;
+
         } else {
             // msg is a data packet
             if (buffer.getLength() >= par("bufferSize").intValue()) {
@@ -77,14 +96,12 @@ void TransportTx::handleMessage(cMessage * msg) {
                 this->bubble("packet dropped");
                 packetDropVector.record(1);
             } else {
-                // enqueue the packet
                 buffer.insert(msg);
                 bufferSizeVector.record(buffer.getLength());
                 // if the server is idle
-                if (waitingFeedback) {
-                    waitingFeedback = 0;
+                if (!endServiceEvent->isScheduled()) {
                     // start the service
-                    scheduleAt(simTime(), endServiceEvent);
+                    scheduleAt(simTime() + 0, endServiceEvent);
                 }
             }
         }
